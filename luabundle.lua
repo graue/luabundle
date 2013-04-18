@@ -2,6 +2,13 @@
 
 local scripts = {}
 
+local function mungeFilename(name)
+    -- Convert something like "effects/wrap.lua" to "effects.wrap"
+    name = string.gsub(name, "%.[Ll][Uu][Aa][Xx]?$", "")
+    name = string.gsub(name, "/", ".")
+    return name
+end
+
 for _,filename in ipairs(arg) do
     file, err = io.open(filename, "r")
     if not file then
@@ -13,17 +20,11 @@ for _,filename in ipairs(arg) do
     local firstline = file:read("*l") .. "\n"
     if string.sub(firstline, 1, 2) == "#!" then firstline = "" end
 
-    scripts[filename] = firstline .. file:read("*a")
+    scripts[mungeFilename(filename)] = firstline .. file:read("*a")
     file:close()
 end
 
-print([[
-function __require(moduleName)
-    return __modules[moduleName](__require)
-end
-
-local __modules = {
-]])
+print("local __modules = {\n")
 
 for k,v in pairs(scripts) do
     print("['" .. k .. "'] = function(require)\n")
@@ -32,6 +33,13 @@ for k,v in pairs(scripts) do
 end
 
 print("}\n")
+
+print([[
+function __require(moduleName)
+    return __modules[moduleName](__require)
+end
+]])
+
 if #arg >= 1 then
-    print("__modules['" .. arg[1] .. "'](__require)")
+    print("__modules['" .. mungeFilename(arg[1]) .. "'](__require)")
 end
