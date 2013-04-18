@@ -36,7 +36,13 @@ print("}\n")
 
 print([[
 function __require(moduleName)
-    return __modules[moduleName](__require)
+    local module = __modules[moduleName]
+    if module then
+        return module(__require)
+    end
+
+    -- Not found in the bundle; try the original require.
+    return require(moduleName)
 end
 ]])
 
